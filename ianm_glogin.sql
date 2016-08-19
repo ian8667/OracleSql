@@ -13,7 +13,10 @@
 -- USAGE
 --   This script should be run upon logging in.
 --
--- Last updated: 19 August 2016 14:41:35
+-- KEYWORDS
+--   oracle glogin sqlplus database
+--
+-- Last updated: 19 August 2016 23:43:39
 --------------------------------------------------------
 --
 
@@ -49,10 +52,10 @@ SET VERIFY ON
 BEGIN
 DBMS_APPLICATION_INFO.SET_CLIENT_INFO(client_info => 'IANM');
 
-DBMS_APPLICATION_INFO.SET_MODULE ( 
-   module_name => 'IANM', 
+DBMS_APPLICATION_INFO.SET_MODULE (
+   module_name => 'IANM',
    action_name => 'SQL*PLUS'
-); 
+);
 
 END;
 /
