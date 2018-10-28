@@ -1,136 +1,56 @@
--- - - - - - - - - - - - - - Script begins here - - - - - - - - - - - - - -
---  NAME:  where.sql
---  Version: 1.1
---  Executed as any valid database user.
--- ------------------------------------------------------------------------
--- AUTHOR:
--- Ian Molloy
--- ------------------------------------------------------------------------
--- PURPOSE:
--- Uses SYS_CONTEXT to obtain relevant and pertinent database
--- related information such as instance name, os_user. etc.
+--------------------------------------------------------
+-- NAME
+--   where.sql
 --
--- Saves manually running SQL queries to confirm which database
--- you are in, who you are logged in as etc, etc.
--- ------------------------------------------------------------------------
--- NOTE:
--- Asserts that this script, where.sql, writes no database
--- state (does not modify database tables).
--- ------------------------------------------------------------------------
+-- DESCRIPTION
+--   Displays information showing where (which database)
+--   the user is logged in to.
 --
+--   This script can be run anytime when logged in and also
+--   by a non-privileged user.
+--
+-- USAGE
+--   This script can be run anytime when loged in.
+--
+-- Last updated: 01 September 2016 14:22:42
+--------------------------------------------------------
+--
+
+
+--------------------------------------------------------
+--  Instance information
+--------------------------------------------------------
 PROMPT
-PROMPT ========================================
+PROMPT Information showing where we are
 PROMPT
 
-PROMPT
-PROMPT
-
-PROMPT Name of the default schema being used in the current
-PROMPT schema. This value can be changed during the session
-PROMPT with an ALTER SESSION SET CURRENT_SCHEMA statement.
-PROMPT
-column CURRENT_SCHEMA format a20
-SELECT Sys_context('userenv', 'CURRENT_SCHEMA') AS CURRENT_SCHEMA
+SELECT To_char(SYSDATE, 'Day DD-Mon-YYYY HH24:MI:SS') AS currdatetime
 FROM   dual;
-column CURRENT_SCHEMA clear
 
-PROMPT
-PROMPT ========================================
-PROMPT
-
-PROMPT
-PROMPT
-PROMPT Name of the database as specified in the DB_NAME
-PROMPT initialization parameter.
-PROMPT
-column DDB_NAME format a20
-SELECT Sys_context('userenv', 'DB_NAME') AS DDB_NAME
+-- See who we are logged in as.
+SELECT 'Connected as user '
+       || USER AS curruser
 FROM   dual;
-column DDB_NAME clear
 
-PROMPT
-PROMPT ========================================
-PROMPT
-
-PROMPT
-PROMPT
-PROMPT Name of the database as specified in the DB_UNIQUE_NAME
-PROMPT initialization parameter.
-PROMPT
-column DB_UNIQUE_NAME format a20
-SELECT Sys_context('userenv', 'DB_UNIQUE_NAME') AS DB_UNIQUE_NAME
+column sid format a10
+column client_info format a16
+column instance_name format a14
+column connected_from format a14 heading 'CONNECTED|FROM HOST'
+column connected_to format a14 heading 'CONNECTED|TO HOST'
+SELECT Sys_context ('USERENV', 'SID')           AS sid,
+       Sys_context ('USERENV', 'CLIENT_INFO')   AS client_info,
+       Sys_context ('USERENV', 'INSTANCE_NAME') AS instance_name,
+       Sys_context ('USERENV', 'HOST')          AS connected_from,
+       Sys_context ('USERENV', 'SERVER_HOST')   AS connected_to
 FROM   dual;
-column DB_UNIQUE_NAME clear
 
-PROMPT
-PROMPT ========================================
-PROMPT
+column sid clear
+column client_info clear
+column instance_name clear
+column connected_from clear
+column connected_to clear
 
-PROMPT
-PROMPT
-PROMPT Operating system user name of the client process that
-PROMPT initiated the database sessionOperating system user
-PROMPT name of the client process that initiated the database
-PROMPT session.
-PROMPT
-column OS_USER format a20
-SELECT Sys_context('userenv', 'OS_USER') as OS_USER
-FROM   dual;
-column OS_USER clear
+--------------------------------------------------------
+--  End of script
+--------------------------------------------------------
 
-PROMPT
-PROMPT ========================================
-PROMPT
-
-PROMPT
-PROMPT SID for the session
-PROMPT
-column SID format a20
-SELECT Sys_context('userenv', 'SID') AS SID
-FROM   dual; 
-column SID clear
-
-
-PROMPT
-PROMPT ========================================
-PROMPT
-
-PROMPT
-PROMPT SHOW section.
-PROMPT
-
-show linesize
-show pagesize
-show spool
-show autocommit
-
-PROMPT
-PROMPT ========================================
-PROMPT
-
-PROMPT
-PROMPT Summary.
-PROMPT
-
-column instance format a15
-column instance_num format a15
-column hostname format a15
-column current_user format a15
-SELECT INSTANCE,
-       instance_num,
-       hostname,
-       current_user
-FROM   (SELECT Sys_context('userenv', 'INSTANCE_NAME') AS INSTANCE
-        FROM   dual),
-       (SELECT Sys_context('userenv', 'INSTANCE') AS INSTANCE_NUM
-        FROM   dual),
-       (SELECT Sys_context('userenv', 'SERVER_HOST') AS HOSTNAME
-        FROM   dual),
-       (SELECT Sys_context('userenv', 'SESSION_USER') AS CURRENT_USER
-        FROM   dual);
-column instance clear
-column instance_num clear
-column hostname clear
-column current_user clear
-
--- - - - - - - - - - - - - - - - Script ends here - - - - - - - - - - - - - -
