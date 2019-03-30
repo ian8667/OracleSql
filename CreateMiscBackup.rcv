@@ -1,0 +1,196 @@
+# CreateMiscBackup.rcv
+# Creates a miscellaneous one-off backup.
+#
+# CONFIGURE CONTROLFILE AUTOBACKUP ON;
+#
+# --------------------------------------------------------
+# Reference :
+# Database Backup and Recovery Reference
+# https://docs.oracle.com/cd/E11882_01/backup.112/e10643/toc.htm
+# --------------------------------------------------------
+#
+# Usage :
+# $ export NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS'
+# $ rman nocatalog | tee rman.log
+# @CreateMiscBackup.rcv
+#
+# --------------------------------------------------------
+#
+# Last updated: 28 July 2016 10:06:32
+#
+# Keywords: oracle rman misc backups
+#
+# --------------------------------------------------------
+#
+connect target /
+
+RUN {
+#
+# Backup datafiles.
+#
+allocate channel ch1 type Disk
+       format '/u08/Mosprd2Clone/%d_datafile_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+allocate channel ch2 type Disk
+       format '/u08/Mosprd2Clone/%d_datafile_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+allocate channel ch3 type Disk
+       format '/u08/Mosprd2Clone/%d_datafile_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+SET COMMAND ID TO 'BACKUP_DATAFILES';
+
+backup check logical incremental level 0 database noexclude
+       include current controlfile
+       tag 'MOSPRDCLONE20160728';
+
+RELEASE CHANNEL ch1;
+RELEASE CHANNEL ch2;
+RELEASE CHANNEL ch3;
+}
+
+RUN {
+#
+# Backup archive logs.
+#
+allocate channel ch1 type Disk
+       format '/u08/Mosprd2Clone/%d_archivelog_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+allocate channel ch2 type Disk
+       format '/u08/Mosprd2Clone/%d_archivelog_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+allocate channel ch3 type Disk
+       format '/u08/Mosprd2Clone/%d_archivelog_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+SET COMMAND ID TO 'BACKUP_ARCHIVELOGS';
+
+backup check logical archivelog all
+      tag 'MOSPRDCLONE20160728';
+
+RELEASE CHANNEL ch1;
+RELEASE CHANNEL ch2;
+RELEASE CHANNEL ch3;
+}
+
+RUN {
+#
+# Backup spfile.
+#
+allocate channel ch1 type Disk
+       format '/u08/Mosprd2Clone/%d_spfile_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+SET COMMAND ID TO 'BACKUP_SPFILE';
+
+backup check logical spfile
+      tag 'MOSPRDCLONE20160728';
+
+RELEASE CHANNEL ch1;
+}
+
+RUN {
+#
+# Backup controlfile.
+#
+allocate channel ch1 type Disk
+       format '/u08/Mosprd2Clone/%d_controlfile_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 2048m;
+SET COMMAND ID TO 'BACKUP_CONTROLFILE';
+
+backup check logical current controlfile
+       tag 'MOSPRDCLONE20160728';
+
+RELEASE CHANNEL ch1;
+}
+
+
+# --------------------------------------------------------
+# --
+# --  Miscelleanous operations to look at the backup
+# --  just taken.
+# --
+# --------------------------------------------------------
+
+
+# --------------------------------------------------------
+# --  REPORT UNRECOVERABLE.
+# --  Lists all unrecoverable data files (Hopefully none).
+# --  A data file is considered unrecoverable if an unrecoverable
+# --  operation has been performed against an object residing
+# --  in the data file since the last backup of the data file.
+# --  In an unrecoverable operation, redo is not generated.
+# --  Examples are direct load of table data and updates with
+# --  the NOLOGGING option.
+# --------------------------------------------------------
+report unrecoverable;
+
+
+# --------------------------------------------------------
+# --  LIST BACKUP SUMMARY.
+# --  List a summary of the most recent backups taken in the
+# --  last three days.
+# --------------------------------------------------------
+list backup summary completed after 'sysdate-3';
+
+
+# --------------------------------------------------------
+# --  LIST FAILURE.
+# --  Lists failures recorded by the DATA RECOVERY ADVISOR.
+# --  The database to which RMAN is connected must be a
+# --  single-instance database and must not be a physical
+# --  standby database. The Data Recovery Advisor can detect
+# --  and repair a wide variety of physical problems that
+# --  cause data loss and corruption. Physical corruptions
+# --  are typically caused by faulty I/O subsystems or human
+# --  error.
+# --------------------------------------------------------
+list failure all;
+
+
+
+# --------------------------------------------------------
+# --  RESTORE DATABASE PREVIEW.
+# --  Reports, but DOES NOT RESTORE, the backups and archived
+# --  redo log files that RMAN could use to restore and recover
+# --  the database to the specified time. RMAN queries the
+# --  metadata and does not actually read the backup files.
+# --
+# --  At the end of the report will be the lines:
+# --  "Media recovery start SCN is 1234
+# --  Recovery must be done beyond SCN 3456 to clear datafile fuzziness"
+# --
+# --  'Ask Tom' has this to say:-
+# --  That means the file contains blocks as of different points
+# --  in time, the file isn't consistent. Datafiles mounted to an
+# --  open database are almost always 'fuzzy' (inconsistent). Hot
+# --  backups are almost always inconsistent. 
+# --
+# --  Basically, that message is saying "there is at least one
+# --  block in this file as of SCN 1234 , therefore to make
+# --  this datafile consistent - we must bring all blocks in this
+# --  file to be as of SCN 3456" 
+# --------------------------------------------------------
+restore database preview;
+
+
+# --------------------------------------------------------
+# --  REPORT SCHEMA.
+# --  Lists the names of all data files (permanent and temporary)
+# --  and tablespaces for the target database at the specified
+# --  point in time.
+# --------------------------------------------------------
+report schema;
+
+
+# --------------------------------------------------------
+# --  End of script.
+# --------------------------------------------------------
+exit;
+
+
