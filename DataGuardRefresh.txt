@@ -1,0 +1,35 @@
+Notes on refreshing the data guard
+
+http://stackoverflow.com/questions/8135393/how-do-you-re-duplicate-a-broken-physical-standby-database
+http://mahesh-oracledba.blogspot.co.uk/2011/06/refresh-dataguard-using-rman.html
+http://oracleinaction.com/using-rman-incremental-backups-refresh-standby-database/
+
+
+Configuring Oracle Data Guard
+https://docs.oracle.com/cd/E11882_01/server.112/e10803/config_dg.htm#HABPT4876
+
+Oracle Best Practices for High Availability
+http://www.oracle.com/technetwork/database/features/availability/maa-wp-11gr1-activedataguard-1-128199.pdf
+
+How to assess SYNC performance with Oracle Database 11.2
+http://www.oracle.com/technetwork/database/availability/sync-2437177.pdf
+
+I was collecting useful information for Ian.
+•             Configuring Oracle Data Guard
+o             https://docs.oracle.com/cd/E11882_01/server.112/e10803/config_dg.htm#HABPT4876
+•             Oracle Best Practices for High Availability
+o             http://www.oracle.com/technetwork/database/features/availability/maa-wp-11gr1-activedataguard-1-128199.pdf
+•             How to assess SYNC performance with Oracle Database 11.2
+o             http://www.oracle.com/technetwork/database/availability/sync-2437177.pdf
+Information about the resync:
+•             Synchronizing tables in a Logical Standby Database (Doc ID 271455.1) -> This info is available in support.oracle.com with your oracle support account.
+•             Best Practices for Corruption Detection, Prevention, and Automatic Repair - in a Data Guard Configuration (Doc ID 1302539.1)
+
+Let me know if you need something else.
+
+
+##===========================================
+## New item
+##===========================================
+
+Section "Creating a Standby Database using RMAN without Backup (from active Database)" of the document "Creating a Physical Standby Database (Doc ID 1475344.1)" discusses using RMAN to refresh the standby database. I feel this is the scenario I’m faced with, so I’m going to look at this document in further detail in order to effect a solution.
