@@ -1,0 +1,64 @@
+Reason why we can't use the clause:
+SET UNTIL SCN 99;
+when we're doing a clone from a backup.
+
+released channel: aux3
+RMAN-00571: ===========================================================
+RMAN-00569: =============== ERROR MESSAGE STACK FOLLOWS ===============
+RMAN-00571: ===========================================================
+RMAN-03002: failure of Duplicate Db command at 08/17/2016 15:24:36
+RMAN-05501: aborting duplication of target database
+RMAN-05542: Only UNTIL TIME can be used with DUPLICATE without TARGET and CATALOG connections
+
+RMAN>
+RMAN> **end-of-file**
+
+
+# -----
+
+
+example, to pull a file from server_B:
+scp oracle@server_B:/u08/temptxfr/*  .
+
+
+# -----
+
+Where I got my time to use in the script from.
+
+
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2016.08.17 16:35:59 =~=~=~=~=~=~=~=~=~=~=~=
+list backup of database summary ;
+
+
+List of Backups
+===============
+Key     TY LV S Device Type Completion Time     #Pieces #Copies Compressed Tag
+------- -- -- - ----------- ------------------- ------- ------- ---------- ---
+2       B  0  A DISK        2016-08-16 21:07:51 1       1       YES        TAG20160816T210020
+6       B  0  A DISK        2016-08-17 14:43:17 1       1       YES        EXLIVECLONE20160817
+9       B  0  A DISK        2016-08-17 14:43:49 1       1       YES        EXLIVECLONE20160817
+10      B  0  A DISK        2016-08-17 14:49:03 1       1       YES        EXLIVECLONE20160817
+
+RMAN> list backupset 10
+2> ;
+
+
+List of Backup Sets
+===================
+
+
+BS Key  Type LV Size       Device Type Elapsed Time Completion Time    
+------- ---- -- ---------- ----------- ------------ -------------------
+10      Incr 0  1.55G      DISK        00:06:48     2016-08-17 14:49:03
+        BP Key: 10   Status: AVAILABLE  Compressed: YES  Tag: EXLIVECLONE20160817
+        Piece Name: /u08/temptxfr/EXLIVE_datafile_06rdg127_1_1.rman
+  List of Datafiles in backup set 10
+  File LV Type Ckp SCN    Ckp Time            Name
+  ---- -- ---- ---------- ------------------- ----
+  4    0  Incr 8496026    2016-08-17 14:42:15 /u07/database/EXLIVE/users01.dbf
+  5    0  Incr 8496026    2016-08-17 14:42:15 /u07/database/EXLIVE/TMA_ias_iau.dbf
+  7    0  Incr 8496026    2016-08-17 14:42:15 /u07/database/EXLIVE/TMA_mds.dbf
+  9    0  Incr 8496026    2016-08-17 14:42:15 /u07/database/EXLIVE/exor.dbf
+
+RMAN> 
+
