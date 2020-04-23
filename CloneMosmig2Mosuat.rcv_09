@@ -1,0 +1,100 @@
+# CloneMosmig2Mosuat.rcv
+# RMAN script to clone (duplicate) database MOSDEV to MOSMIG.
+#
+# Target Database : mosmig
+# Target Database Server : slvora01
+#
+# Auxiliary Database : mosuat
+# Auxiliary Database Server : slvora01
+#
+# --------------------------------------------------------
+#
+# Last commit SCN.
+# Try to find the last commit (SCN) for the duplicate process
+# and use the value in the 'SET UNTIL SCN' clause in the run
+# block. Run the query on the target database.
+# SQL> alter system switch logfile;
+# SQL> SELECT ( Max(next_change#) - 1 ) AS scn2use
+# FROM   v$archived_log
+# WHERE  archived = 'YES'
+# GROUP  BY thread#;
+#
+# --------------------------------------------------------
+#
+# SQL script 'get_filenames.sql' can be used to find the
+# location of the online redo logs and datafiles.
+#
+# --------------------------------------------------------
+#
+# The following two commands can be used to see whether the
+# parameters 'db_file_name_convert' and 'log_file_name_convert'
+# have been set:
+#
+# SQL> show parameter db_file_name
+# SQL> show parameter log_file_name
+#
+# One place to set these is in the init.ora file.
+#
+# --------------------------------------------------------
+#
+# Usage (on the auxiliary database server) :
+# $ export NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS'
+# $ rman nocatalog | tee rman.log
+# @CloneMosmig2Mosuat.rcv
+#
+# When the clone has completed, connect to the newly cloned
+# database to ensure it's open.
+# SQL> select instance_name, status from v$instance;
+# SQL> shutdown immediate;
+# SQL> startup;
+# SQL> alter system switch logfile;
+# SQL> select instance_name, status from v$instance;
+#
+# This will ensure among other things, the database is OK.
+# Don't forget to ensure the database has started up with
+# an spfile!
+#
+# --------------------------------------------------------
+#
+# Post clone note - tempfiles.
+#
+# Commands to add tempfiles to temporary tablespaces.
+# Online tempfiles have complete space information.
+# Other tempfiles may require adjustment.
+# ALTER TABLESPACE TEMP ADD TEMPFILE '/u07/database/MOSUAT/temp01.dbf'
+#     SIZE 18760M REUSE AUTOEXTEND ON NEXT 10485760  MAXSIZE 25000M;
+# ALTER TABLESPACE TEMP ADD TEMPFILE '/u07/database/MOSUAT/TEMP_MOSER3.dbf'
+#     SIZE 15728640  REUSE AUTOEXTEND OFF;
+# ALTER TABLESPACE PERFSTAT_TMP ADD TEMPFILE '/u07/database/MOSUAT/perfstat_tmp.dbf'
+#     SIZE 209715200  REUSE AUTOEXTEND ON NEXT 20971520  MAXSIZE 1024M;
+# ALTER TABLESPACE PERFSTAT_TMP ADD TEMPFILE '/u07/database/MOSUAT/PERFSTAT_TMP_MOSER3.dbf'
+#     SIZE 289406976  REUSE AUTOEXTEND OFF;
+# End of tempfile additions.
+#
+# --------------------------------------------------------
+#
+# Last updated: 18 June 2016 14:34:31
+#
+# Keywords: rman duplicate clone mosuat mosmig
+#
+# --------------------------------------------------------
+#
+#connect target sys/th3k33p3r@mosdev;
+connect auxiliary /
+
+RUN {
+#SET UNTIL SCN 165601217;
+ALLOCATE AUXILIARY CHANNEL aux1 DEVICE TYPE DISK;
+ALLOCATE AUXILIARY CHANNEL aux2 DEVICE TYPE DISK;
+ALLOCATE AUXILIARY CHANNEL aux3 DEVICE TYPE DISK;
+SET COMMAND ID TO 'CLONEMOSMIG2MOSUAT';
+
+  DUPLICATE TARGET DATABASE TO mosuat
+  PFILE = /u01/app/oracle/product/rdbms/11.2.0.4/dbs/initMOSUAT.ora
+  BACKUP LOCATION '/u08/mosmig_keep_rman';
+
+release channel aux1;
+release channel aux2;
+release channel aux3;
+}
+
