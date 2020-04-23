@@ -1,0 +1,83 @@
+ADRCI: ADR Command Interpreter
+The ADR Command Interpreter (ADRCI) is a command-line tool that you use to manage Oracle Database diagnostic data.
+
+
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2016.07.26 11:43:00 =~=~=~=~=~=~=~=~=~=~=~=
+adrci> show incident
+
+ADR Home = /u01/app/oracle/diag/rdbms/cvtst01/CVTST01:
+*************************************************************************
+INCIDENT_ID          PROBLEM_KEY                                                 CREATE_TIME
+-------------------- ----------------------------------------------------------- ----------------------------------------
+244502               ORA 600 [qesaAdaptFch.4]                                    2016-07-19 05:07:59.038000 +01:00
+244494               ORA 600 [qesaAdaptFch.4]                                    2016-07-19 05:07:59.054000 +01:00
+244486               ORA 600 [qesaAdaptFch.4]                                    2016-07-19 05:07:59.071000 +01:00
+244510               ORA 600 [qesaAdaptFch.4]                                    2016-07-19 05:07:59.515000 +01:00
+245151               ORA 600 [ORA-00600: internal error code, arguments: [qesaAd 2016-07-19 05:08:04.314000 +01:00
+248291               ORA 600 [qesaAdaptFch.4]                                    2016-07-20 05:07:29.743000 +01:00
+248288               ORA 600 [qesaAdaptFch.4]                                    2016-07-20 05:07:29.918000 +01:00
+248289               ORA 600 [qesaAdaptFch.4]                                    2016-07-20 05:07:30.205000 +01:00
+248290               ORA 600 [qesaAdaptFch.4]                                    2016-07-20 05:07:30.327000 +01:00
+248295               ORA 600 [qesaAdaptFch.4]                                    2016-07-21 05:08:44.055000 +01:00
+248293               ORA 600 [qesaAdaptFch.4]                                    2016-07-21 05:08:44.267000 +01:00
+248294               ORA 600 [qesaAdaptFch.4]                                    2016-07-21 05:08:44.291000 +01:00
+248296               ORA 600 [qesaAdaptFch.4]                                    2016-07-21 05:08:44.398000 +01:00
+245135               ORA 600 [ORA-00600: internal error code, arguments: [qesaAd 2016-07-21 05:08:49.484000 +01:00
+248299               ORA 600 [qesaAdaptFch.4]                                    2016-07-22 05:07:39.800000 +01:00
+248298               ORA 600 [qesaAdaptFch.4]                                    2016-07-22 05:07:39.860000 +01:00
+248301               ORA 600 [qesaAdaptFch.4]                                    2016-07-22 05:07:39.892000 +01:00
+248300               ORA 600 [qesaAdaptFch.4]                                    2016-07-22 05:07:39.921000 +01:00
+245144               ORA 600 [ORA-00600: internal error code, arguments: [qesaAd 2016-07-22 05:07:45.428000 +01:00
+248306               ORA 600 [qesaAdaptFch.4]                                    2016-07-25 05:09:59.071000 +01:00
+248303               ORA 600 [qesaAdaptFch.4]                                    2016-07-25 05:09:59.161000 +01:00
+248305               ORA 600 [qesaAdaptFch.4]                                    2016-07-25 05:09:59.221000 +01:00
+248304               ORA 600 [qesaAdaptFch.4]                                    2016-07-25 05:09:59.346000 +01:00
+245175               ORA 600 [ORA-00600: internal error code, arguments: [qesaAd 2016-07-25 05:10:04.617000 +01:00
+248308               ORA 600 [qesaAdaptFch.4]                                    2016-07-26 05:12:07.801000 +01:00
+248311               ORA 600 [qesaAdaptFch.4]                                    2016-07-26 05:12:07.920000 +01:00
+248313               ORA 600 [qesaAdaptFch.4]                                    2016-07-26 05:12:08.006000 +01:00
+248310               ORA 600 [qesaAdaptFch.4]                                    2016-07-26 05:12:08.021000 +01:00
+245136               ORA 600 [ORA-00600: internal error code, arguments: [qesaAd 2016-07-26 05:12:13.274000 +01:00
+29 rows fetched
+
+adrci> show incident -p "incident_id=245136" -mode brief
+
+ADR Home = /u01/app/oracle/diag/rdbms/cvtst01/CVTST01:
+*************************************************************************
+
+**********************************************************
+INCIDENT INFO RECORD 1
+**********************************************************
+   INCIDENT_ID                   245136
+   STATUS                        ready
+   CREATE_TIME                   2016-07-26 05:12:13.274000 +01:00
+   PROBLEM_ID                    1
+   CLOSE_TIME                    <NULL>
+   FLOOD_CONTROLLED              none
+   ERROR_FACILITY                ORA
+   ERROR_NUMBER                  600
+   ERROR_ARG1                    ORA-00600: internal error code, arguments: [qesaAdaptFch.4], [0]
+   ERROR_ARG2                    <NULL>
+   ERROR_ARG3                    <NULL>
+   ERROR_ARG4                    <NULL>
+   ERROR_ARG5                    <NULL>
+   ERROR_ARG6                    <NULL>
+   ERROR_ARG7                    <NULL>
+   ERROR_ARG8                    <NULL>
+   ERROR_ARG9                    <NULL>
+   ERROR_ARG10                   <NULL>
+   ERROR_ARG11                   <NULL>
+   ERROR_ARG12                   <NULL>
+   SIGNALLING_COMPONENT          Parallel_Execution
+   SIGNALLING_SUBCOMPONENT       <NULL>
+   SUSPECT_COMPONENT             <NULL>
+   SUSPECT_SUBCOMPONENT          <NULL>
+   ECID                          <NULL>
+   IMPACTS                       0
+1 rows fetched
+
+adrci> ips create package problem 1 correlate all
+Created package 6 based on problem id 1, correlation level all
+adrci> ips generate package 6 in "/tmp"
+Generated package 6 in file /tmp/ORA600ORA_20160726114411_COM_1.zip, mode complete
+adrci>
