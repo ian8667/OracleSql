@@ -13,10 +13,7 @@
 -- USAGE
 --   This script should be run upon logging in.
 --
--- KEYWORDS
---   oracle glogin sqlplus database
---
--- Last updated: 19 August 2016 23:43:39
+-- Last updated: 24 August 2016 11:52:11
 --------------------------------------------------------
 --
 
@@ -52,10 +49,10 @@ SET VERIFY ON
 BEGIN
 DBMS_APPLICATION_INFO.SET_CLIENT_INFO(client_info => 'IANM');
 
-DBMS_APPLICATION_INFO.SET_MODULE (
-   module_name => 'IANM',
+DBMS_APPLICATION_INFO.SET_MODULE ( 
+   module_name => 'IANM', 
    action_name => 'SQL*PLUS'
-);
+); 
 
 END;
 /
@@ -69,10 +66,12 @@ PROMPT
 PROMPT Instance information just to confirm where we are
 PROMPT
 
-SELECT To_char(SYSDATE, 'DAY DD-Mon-YYYY HH24:MI:SS') AS currdatetime
+SELECT To_char(SYSDATE, 'Day DD-Mon-YYYY HH24:MI:SS') AS currdatetime
 FROM   dual;
 
-SELECT 'You are logged in as user ' || USER
+-- See who we are logged in as.
+SELECT 'Connected as user '
+       || USER AS curruser
 FROM   dual;
 
 SELECT instance_name,
