@@ -1,0 +1,247 @@
+#!/bin/bash
+set +v
+# ------------------------------------------------------------------
+# database_backup.sh
+# Takes a full RMAN backup of the database, archive logs,
+# control files and spfile.
+#
+# Last update: 20 January 2017 13:01:44
+# ------------------------------------------------------------------
+trap bashtrap INT
+
+# ------------------------------------------------------------------
+
+#
+# This function is called whenever a CTL/C is detected by the
+# 'trap' command.
+#
+bashtrap() {
+   echo "CTL/C detected ... executing bash trap"
+   exit 1
+}
+
+# ------------------------------------------------------------------
+
+#
+# Prints a header message in the format of, for example,
+# DATE: Monday 2017-01-16
+# TIME: 12:36:02
+# <message passed as a parameter to print>
+#
+header()
+{
+  echo " "
+  date "+DATE: %A %F%nTIME: %H:%M:%S"
+  echo $*
+  echo " "
+}
+
+# ------------------------------------------------------------------
+
+#
+# Prints 'usage' information to the user and exits the script.
+#
+usage() {
+cat <<HELP_USAGE
+
+    Usage: $(basename $0)  <oracle sid> | [-h h help]
+
+    Takes a full RMAN backup of the database, archive logs,
+    control files and spfile for the Oracle sid entered as
+    a parameter
+
+
+HELP_USAGE
+
+  exit 0
+}
+
+# ------------------------------------------------------------------
+
+#
+# Prints a trailer message in the format of, for example,
+# TIME: 12:36:02
+# <message passed as a parameter to print>
+#
+trailer()
+{
+  echo " "
+  date "+TIME: %H:%M:%S"
+  echo $*
+  echo " "
+}
+
+# ------------------------------------------------------------------
+
+#
+# Prints a message to the screen in the format of, for example,
+# 11:41:42 <message passed as a parameter to print>
+#
+function log {
+    print "$(date +%T) $@"
+}
+
+# ------------------------------------------------------------------
+
+#
+# Prints blank lines to the screen. ie, gives us a number of
+# blank lines.
+#
+blanklines()
+{
+  LINES=$1
+  for ((X=1; X<${LINES}; X+=1))
+  do
+     echo " "
+  done
+}
+
+# ------------------------------------------------------------------
+
+body()
+{
+
+  export ORACLE_HOME=/u01/oracle/12.1.0.1
+  # The oracle sid was assigned before this function was called.
+  export ORACLE_SID
+  export NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS'
+  export NLS_LANG='AMERICAN_AMERICA.WE8ISO8859P1'
+  PATH=$PATH:$ORACLE_HOME/bin
+  MYDATE=`date +%d%b%Y`
+
+  blanklines 3
+  header "Starting RMAN backup for database ${ORACLE_SID}"
+
+  # Start of RMAN commands
+  ${ORACLE_HOME}/bin/rman target / nocatalog << RMANEOF
+
+# ------------------------------------------------------------------
+# Configuration commands
+# ------------------------------------------------------------------
+select rpad('*',60,'*') as line from dual ;
+
+CONFIGURE CONTROLFILE AUTOBACKUP ON;
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 2 DAYS;
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/u02/rmanbackups/autobackup_ctlfile_%F.rman';
+
+
+# ------------------------------------------------------------------
+# Datafiles backup
+# ------------------------------------------------------------------
+run {
+allocate channel ch1 type Disk
+       format '/u02/rmanbackups/%d_datafile_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 4096M;
+SET COMMAND ID TO 'BACKUP_DATAFILES';
+select rpad('*',60,'*') as line from dual ;
+select 'Backing up datafiles' as message from dual ;
+
+BACKUP AS COMPRESSED BACKUPSET check logical DATABASE
+       include current controlfile
+       tag 'DATAFILE_$MYDATE';
+
+RELEASE CHANNEL ch1;
+}
+
+
+# ------------------------------------------------------------------
+# Archive logs backup
+# ------------------------------------------------------------------
+run {
+allocate channel ch1 type Disk
+       format '/u02/rmanbackups/%d_archivelog_%U.rman'
+       maxopenfiles 8
+       maxpiecesize 4096M;
+SET COMMAND ID TO 'BACKUP_ARCHIVELOGS';
+select rpad('*',60,'*') as line from dual ;
+select 'Backing up archivelogs' as message from dual ;
+
+BACKUP AS COMPRESSED BACKUPSET check logical archivelog all delete input
+      tag 'ARCHIVELOG_$MYDATE';
+
+RELEASE CHANNEL ch1;
+}
+
+
+# ------------------------------------------------------------------
+# Controlfile backup
+# ------------------------------------------------------------------
+run {
+allocate channel ch1 type Disk
+       format '/u02/rmanbackups/controlfile_%d_%s_%T.rman';
+SET COMMAND ID TO 'BACKUP_CONTROLFILE';
+select rpad('*',60,'*') as line from dual ;
+select 'Backing up controlfiles' as message from dual ;
+
+BACKUP AS COMPRESSED BACKUPSET check logical CURRENT CONTROLFILE
+    tag 'CONTROLFILE_$MYDATE';
+
+RELEASE CHANNEL ch1;
+}
+
+
+# ------------------------------------------------------------------
+# Spfile backup
+# ------------------------------------------------------------------
+run {
+allocate channel ch1 type Disk
+       format '/u02/rmanbackups/spfile_%d_%s_%T.rman';
+SET COMMAND ID TO 'BACKUP_SPFILEFILE';
+select rpad('*',60,'*') as line from dual ;
+select 'Backing up spfile' as message from dual ;
+
+BACKUP AS COMPRESSED BACKUPSET check logical spfile
+    tag 'SPFILE_$MYDATE';
+
+RELEASE CHANNEL ch1;
+}
+
+
+# ------------------------------------------------------------------
+# RMAN housekeeping
+# ------------------------------------------------------------------
+select rpad('*',60,'*') as line from dual ;
+select 'RMAN housekeeping' as message from dual ;
+CROSSCHECK BACKUP;
+CROSSCHECK ARCHIVELOG ALL;
+DELETE NOPROMPT EXPIRED BACKUP;
+DELETE NOPROMPT OBSOLETE;
+DELETE NOPROMPT EXPIRED ARCHIVELOG ALL;
+
+
+# ------------------------------------------------------------------
+# End of RMAN script blocks
+# ------------------------------------------------------------------
+EXIT;
+RMANEOF
+
+
+  trailer "Backup complete"
+}
+
+# ------------------------------------------------------------------
+# Main routine start here
+# ------------------------------------------------------------------
+
+if [ $# -eq 0 ]
+then
+     usage
+else
+     case $1 in
+       -h) usage ;;
+        h) usage ;;
+     help) usage ;;
+        *) ORACLE_SID=$1;;
+     esac
+
+fi
+
+
+programname="$(basename $0)"
+log "Running script: $programname"
+body
+
+# ------------------------------------------------------------------
+# End of script
+# ------------------------------------------------------------------
