@@ -6,7 +6,9 @@
 --
 --  Can Not Allocate Log (Doc ID 1265962.1)
 --
---  Last updated: 19 August 2016 14:10:22
+--  Master Note: Troubleshooting Redo Logs and Archiving (Doc ID 1507157.1)
+--
+--  Last updated: 09 September 2016 10:28:47
 --------------------------------------------------------
 --
 COL DAY FORMAT a15;
@@ -20,6 +22,25 @@ GROUP BY to_char(first_time, 'yyyy-mm-dd'),
          to_char(first_time, 'hh24')
 ORDER BY to_char(first_time, 'yyyy-mm-dd'),
          to_char(first_time, 'hh24') asc;
+
+# -----
+
+-- Same as the SQL query above but just gives data for the
+-- current day when the query is run.
+WITH today
+     AS (SELECT To_char(SYSDATE, 'yyyy-mm-dd') AS rightnow
+         FROM   dual)
+SELECT To_char(l.first_time, 'yyyy-mm-dd') AS perday,
+       To_char(l.first_time, 'hh24')       AS hour,
+       Count(*)                            AS total
+FROM   v$log_history l,
+       today t
+WHERE  l.thread# = 1
+       AND To_char(l.first_time, 'yyyy-mm-dd') = t.rightnow
+GROUP  BY To_char(l.first_time, 'yyyy-mm-dd'),
+          To_char(l.first_time, 'hh24')
+ORDER  BY To_char(l.first_time, 'yyyy-mm-dd'),
+          To_char(l.first_time, 'hh24') ASC;
 
 # -----
 
