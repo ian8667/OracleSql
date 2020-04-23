@@ -1,0 +1,94 @@
+# Create database backup for use as a template
+# for database MOSTRN.
+#
+# CONFIGURE CONTROLFILE AUTOBACKUP ON;
+#
+# --------------------------------------------------------
+#
+# Last updated: 06 June 2016 16:33:05
+#
+# Keywords: rman database template mostrn training
+#
+# --------------------------------------------------------
+#
+RUN {
+#
+# Datafiles.
+#
+     allocate channel ch1 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_datafile_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+     allocate channel ch2 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_datafile_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+     allocate channel ch3 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_datafile_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+
+     backup incremental level 0 database noexclude
+       include current controlfile
+       tag 'TEMPLATE_20160606';
+
+     RELEASE CHANNEL ch1;
+     RELEASE CHANNEL ch2;
+     RELEASE CHANNEL ch3;
+}
+
+RUN {
+#
+# Archive logs.
+#
+     allocate channel ch1 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_archivelog_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+     allocate channel ch2 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_archivelog_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+     allocate channel ch3 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_archivelog_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+
+
+    backup archivelog all
+      tag 'TEMPLATE_20160606';
+
+     RELEASE CHANNEL ch1;
+     RELEASE CHANNEL ch2;
+     RELEASE CHANNEL ch3;
+}
+
+RUN {
+#
+# Controlfile.
+#
+     allocate channel ch1 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_controlfile_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+
+     backup current controlfile
+       tag 'TEMPLATE_20160606';
+
+     RELEASE CHANNEL ch1;
+}
+
+RUN {
+#
+# spfile.
+#
+     allocate channel ch1 type Disk
+       format '/u08/backup-slvora01/MOSTRN/Template_20160606/%d_spfile_%p.rman'
+       maxopenfiles 8
+       maxpiecesize 1024m;
+
+     backup spfile
+      tag 'TEMPLATE_20160606';
+
+     RELEASE CHANNEL ch1;
+}
