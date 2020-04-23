@@ -79,7 +79,7 @@
 #
 # --------------------------------------------------------
 #
-#connect target sys/th3k33p3r@mosdev;
+#connect target sys/<password>@mosdev;
 connect auxiliary /
 
 RUN {
