@@ -1,0 +1,22 @@
+This sql can list backup job details, ie when the job started and finished.
+ 
+ 
+SELECT session_key,
+       input_type,
+       status,
+       To_char(start_time, 'yyyy-mm-dd hh24:mi:ss') AS start_time,
+       To_char(end_time, 'yyyy-mm-dd hh24:mi:ss')   AS end_time,
+       Round(( elapsed_seconds / 3600 ), 5)         AS hours,
+       time_taken_display                           AS time_taken
+FROM   v$rman_backup_job_details
+ORDER  BY session_key; 
+ 
+ 
+This can be useful with rman backup and the command:
+ 
+2> set until time = "to_date('15/05/2012 13:30:00','dd/mm/yyyy hh24:mi:ss')";
+ 
+The sql query above can be used to show when the job completed and thus what value to to place in the “set until time” line.
+ 
+Keywords: oracle rman backup details
+
