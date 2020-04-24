@@ -1,0 +1,50 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2016.07.29 11:00:08 =~=~=~=~=~=~=~=~=~=~=~=
+list backup of database summary Tag MOSPRDCLONE20160728;
+
+
+List of Backups
+===============
+Key     TY LV S Device Type Completion Time     #Pieces #Copies Compressed Tag
+------- -- -- - ----------- ------------------- ------- ------- ---------- ---
+153     B  0  A DISK        2016-07-28 10:30:32 2       1       YES        MOSPRDCLONE20160728
+156     B  0  A DISK        2016-07-28 10:33:05 2       1       YES        MOSPRDCLONE20160728
+157     B  0  A DISK        2016-07-28 10:33:06 2       1       YES        MOSPRDCLONE20160728
+
+RMAN> list backupset 157
+2> ;
+
+
+List of Backup Sets
+===================
+
+
+BS Key  Type LV Size       Device Type Elapsed Time Completion Time
+------- ---- -- ---------- ----------- ------------ -------------------
+157     Incr 0  3.21G      DISK        00:13:55     2016-07-28 10:33:06
+  List of Datafiles in backup set 157
+  File LV Type Ckp SCN    Ckp Time            Name
+  ---- -- ---- ---------- ------------------- ----
+  1    0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/system.dbf
+  4    0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/users.dbf
+  6    0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/documents.dbf
+  10   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/users05.dbf
+  11   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/users06.dbf
+  15   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/documents04.dbf
+  18   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/PAFDAT1.dbf
+  19   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/REPORTS1.dbf
+  20   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/REPORTS2.dbf
+  27   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/AUDIT_DATA_CHANGE1.dbf
+  32   0  Incr 184534957  2016-07-28 10:19:11 /u07/database/MOSPRD/addresses.dbf
+
+  Backup Set Copy #1 of backup set 157
+  Device Type Elapsed Time Completion Time     Compressed Tag
+  ----------- ------------ ------------------- ---------- ---
+  DISK        00:13:55     2016-07-28 10:33:06 YES        MOSPRDCLONE20160728
+
+    List of Backup Pieces for backup set 157 Copy #1
+    BP Key  Pc# Status      Piece Name
+    ------- --- ----------- ----------
+    165     1   AVAILABLE   /u08/Mosprd2Clone/MOSPRD_datafile_4rrbqq4v_1_1.rman
+    166     2   AVAILABLE   /u08/Mosprd2Clone/MOSPRD_datafile_4rrbqq4v_2_1.rman
+
+RMAN>
