@@ -1,0 +1,288 @@
+
+Rem =====================================================================
+Rem Exit immediately if there are errors in the initial checks
+Rem =====================================================================
+
+WHENEVER SQLERROR EXIT;
+
+DOC
+######################################################################
+######################################################################
+    The following statement will cause an "ORA-01722: invalid number"
+    error if the user running this script is not SYS.  Disconnect
+    and reconnect with AS SYSDBA.
+######################################################################
+######################################################################
+#
+
+SELECT TO_NUMBER('MUST_BE_AS_SYSDBA') FROM DUAL
+WHERE USER != 'SYS';
+
+DOC
+######################################################################
+######################################################################
+    The following statement will cause an "ORA-01722: invalid number"
+    error if the database server version is not correct for this script.
+    Perform "ALTER SYSTEM CHECKPOINT" prior to "SHUTDOWN ABORT", and use
+    a different script or a different server.
+######################################################################
+######################################################################
+#
+
+SELECT TO_NUMBER('MUST_BE_11_2_0_4') FROM v$instance
+WHERE substr(version,1,8) != '11.2.0.4';
+
+DOC
+#######################################################################
+#######################################################################
+   The following statement will cause an "ORA-01722: invalid number"
+   error if the database has not been opened for UPGRADE.
+
+   Perform "ALTER SYSTEM CHECKPOINT" prior to "SHUTDOWN ABORT",  and
+   restart using UPGRADE.
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('MUST_BE_OPEN_UPGRADE') FROM v$instance
+WHERE status != 'OPEN MIGRATE';
+
+DOC
+#######################################################################
+#######################################################################
+     The following statement will cause an "ORA-01722: invalid number"
+     error if the Oracle Database Vault option is TRUE.  Upgrades cannot
+     be run with the Oracle Database Vault option set to TRUE since
+     AS SYSDBA connections are restricted.
+
+     Perform "ALTER SYSTEM CHECKPOINT" prior to "SHUTDOWN ABORT", relink
+     the server without the Database Vault option, and restart the server
+     using UPGRADE mode.
+
+
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('DATA_VAULT_OPTION_ON') FROM v$option
+ WHERE
+  value = 'TRUE' and parameter = 'Oracle Database Vault';
+
+
+DOC
+#######################################################################
+#######################################################################
+   The following statement will cause an "ORA-01722: invalid number"
+   error if Database Vault is installed in the database but the Oracle
+   Label Security option is FALSE.  To successfully upgrade Oracle
+   Database Vault, the Oracle Label Security option must be TRUE.
+
+   Perform "ALTER SYSTEM CHECKPOINT" prior to "SHUTDOWN ABORT",
+   relink the server with the OLS option (but without the Oracle Database
+   Vault option) and restart the server using UPGRADE.
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('LABEL_SECURITY_OPTION_OFF') FROM v$option
+WHERE value = 'FALSE' and parameter =
+      (SELECT 'Oracle Label Security' FROM user$ where name = 'DVSYS');
+
+DOC
+#######################################################################
+#######################################################################
+   The following statement will cause an "ORA-01722: invalid number"
+   error if bootstrap migration is in progress and logminer clients
+   require utlmmig.sql to be run next to support this redo stream.
+
+   Run utlmmig.sql
+   then (if needed)
+   restart the database using UPGRADE and
+   rerun the upgrade script.
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('MUST_RUN_UTLMMIG.SQL')
+    FROM SYS.V$DATABASE V
+    WHERE V.LOG_MODE = 'ARCHIVELOG' and
+          V.SUPPLEMENTAL_LOG_DATA_MIN != 'NO' and
+          exists (select 1 from sys.props$
+                  where name = 'LOGMNR_BOOTSTRAP_UPGRADE_ERROR');
+
+
+DOC
+#######################################################################
+#######################################################################
+   The following error is generated if the pre-upgrade tool has not been
+   run in the old ORACLE_HOME home prior to upgrading a pre-11.2 database:
+
+   SELECT TO_NUMBER('MUST_HAVE_RUN_PRE-UPGRADE_TOOL_FOR_TIMEZONE')
+                       *
+      ERROR at line 1:
+      ORA-01722: invalid number
+
+     o Action:
+       Shutdown database ("alter system checkpoint" and then "shutdown abort").
+       Revert to the original oracle home and start the database.
+       Run pre-upgrade tool against the database.
+       Review and take appropriate actions based on the pre-upgrade
+       output before opening the datatabase in the new software version.
+
+#######################################################################
+#######################################################################
+#
+
+Rem Assure CHAR semantics are not used in the dictionary
+ALTER SESSION SET NLS_LENGTH_SEMANTICS=BYTE;
+
+Rem To keep the check simple and avoid multiple errors - in upgrade mode,
+Rem create registry$database and add tz_version in case the table
+Rem and/or column do not exist.
+CREATE TABLE registry$database
+               (platform_id NUMBER, platform_name VARCHAR2(101),
+                edition VARCHAR2(30), tz_version NUMBER);
+ALTER TABLE registry$database add (tz_version number);
+
+Rem Check if tz_version was populated if the db is pre-11.2
+SELECT TO_NUMBER('MUST_HAVE_RUN_PRE-UPGRADE_TOOL_FOR_TIMEZONE')
+   FROM sys.props$
+   WHERE
+     (
+       (
+        (0 = (select count(*) from registry$database))
+        OR
+        ((SELECT tz_version from registry$database) is null)
+       )
+       AND
+       (
+        ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+          '9.2.') OR
+        ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+          '10.1') OR
+        ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+          '10.2') OR
+        ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+          '11.1')
+       )
+     );
+
+
+DOC
+#######################################################################
+#######################################################################
+   The following error is generated if the pre-upgrade tool has not been
+   run in the old oracle home prior to upgrading a pre-11.2 database:
+
+      SELECT TO_NUMBER('MUST_BE_SAME_TIMEZONE_FILE_VERSION')
+                       *
+      ERROR at line 1:
+      ORA-01722: invalid number
+
+
+     o Action:
+       Shutdown database ("alter system checkpoint" and then "shutdown abort").
+       Revert to the original ORACLE_HOME and start the database.
+       Run pre-upgrade tool against the database.
+       Review and take appropriate actions based on the pre-upgrade
+       output before opening the datatabase in the new software version.
+
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('MUST_BE_SAME_TIMEZONE_FILE_VERSION')
+   FROM sys.props$
+   WHERE
+     (
+      ((SELECT TO_NUMBER(value$) from sys.props$
+         WHERE name = 'DST_PRIMARY_TT_VERSION') !=
+       (SELECT tz_version from registry$database))
+      AND
+      (((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+         '9.2.') OR
+       ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+         '10.1') OR
+       ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+         '10.2') OR
+       ((SELECT substr(version,1,4) FROM registry$ where cid = 'CATPROC') =
+         '11.1'))
+     );
+
+
+DOC
+#######################################################################
+#######################################################################
+   The following error is generated if (1) the old release uses a time
+   zone file version newer than the one shipped with the new oracle
+   release and (2) the new oracle home has not been patched yet:
+
+      SELECT TO_NUMBER('MUST_PATCH_TIMEZONE_FILE_VERSION_ON_NEW_ORACLE_HOME')
+                       *
+      ERROR at line 1:
+      ORA-01722: invalid number
+
+     o Action:
+       Shutdown database ("alter system checkpoint" and then "shutdown abort").
+       Patch new ORACLE_HOME to the same time zone file version as used
+       in the old ORACLE_HOME.
+
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('MUST_PATCH_TIMEZONE_FILE_VERSION_ON_NEW_ORACLE_HOME')
+   FROM sys.props$
+   WHERE
+     (
+      (name = 'DST_PRIMARY_TT_VERSION' AND TO_NUMBER(value$) > 14)
+      AND
+      (0 = (select count(*) from v$timezone_file))
+     );
+
+
+DOC
+#######################################################################
+#######################################################################
+    The following statements will cause an "ORA-01722: invalid number"
+    error if the SYSAUX tablespace does not exist or is not
+    ONLINE for READ WRITE, PERMANENT, EXTENT MANAGEMENT LOCAL, and
+    SEGMENT SPACE MANAGEMENT AUTO.
+
+    The SYSAUX tablespace is used in 10.1 to consolidate data from
+    a number of tablespaces that were separate in prior releases.
+    Consult the Oracle Database Upgrade Guide for sizing estimates.
+
+    Create the SYSAUX tablespace, for example,
+
+     create tablespace SYSAUX datafile 'sysaux01.dbf'
+         size 70M reuse
+         extent management local
+         segment space management auto
+         online;
+
+    Then rerun the catupgrd.sql script.
+#######################################################################
+#######################################################################
+#
+
+SELECT TO_NUMBER('No SYSAUX tablespace') FROM dual
+WHERE 'SYSAUX' NOT IN (SELECT name from ts$);
+
+SELECT TO_NUMBER('Not ONLINE for READ/WRITE') from ts$
+WHERE name='SYSAUX' AND online$ !=1;
+
+SELECT TO_NUMBER ('Not PERMANENT') from ts$
+WHERE name='SYSAUX' AND
+      (contents$ !=0 or (contents$ = 0 AND bitand(flags, 16)= 16));
+
+SELECT TO_NUMBER ('Not LOCAL extent management') from ts$
+WHERE name='SYSAUX' AND bitmapped = 0;
+
+SELECT TO_NUMBER ('Not AUTO segment space management') from ts$
+WHERE name='SYSAUX' AND bitand(flags,32) != 32;
+
+Rem =====================================================================
+Rem Assure CHAR semantics are not used in the dictionary
+Rem =====================================================================
+
