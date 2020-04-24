@@ -1,0 +1,14 @@
+Can I use this as a sample sql script header???
+ 
+-- -----------------------------------------------------------------------------------
+-- File Name    : https://oracle-base.com/dba/monitoring/longops.sql
+-- Author       : Tim Hall
+-- Description  : Displays information on all long operations.
+-- Requirements : Access to the V$ views.
+-- Call Syntax  : @longops
+-- Last Modified: 22 September 2016 15:11:07
+-- -----------------------------------------------------------------------------------
+ 
+ 
+https://oracle-base.com/dba/script?category=monitoring&file=longops.sql
+ 
