@@ -1,0 +1,22 @@
+# Restore database MOSMIG from an RMAN backup.
+#
+connect target /
+
+RUN {
+   set until scn=165582776;
+ALLOCATE CHANNEL chan1 DEVICE TYPE DISK;
+ALLOCATE CHANNEL chan2 DEVICE TYPE DISK;
+ALLOCATE CHANNEL chan3 DEVICE TYPE DISK;
+SET COMMAND ID TO 'RESTOREMOSMIG';
+
+   restore database;
+   recover database;
+
+release channel chan1;
+release channel chan2;
+release channel chan3;
+}
+
+# MOSMIG as user SYS ==> alter database open resetlogs;
+#
+
