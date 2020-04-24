@@ -1,0 +1,45 @@
+export NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS'
+
+rman nocatalog;
+
+# Target Database : myprim
+# Target Database Server : dev
+#
+# Auxiliary Database : testdb
+# Auxiliary Database Server : uat
+#
+# RMAN> duplicate database to 'testdb' backup location '/u03/backup';
+#
+# Connect to the newly created database to ensure it's open.
+# SQL> select instance_name, status from v$instance;
+#
+# Try to find the last commit (SCN) for duplicate process
+# and use in the 'SET UNTIL SCN' clause in the run block:
+# SQL> SELECT ( Max(next_change#) - 1 ) AS scn2use
+# FROM   v$archived_log
+# WHERE  archived = 'YES'
+# GROUP  BY thread#;
+#
+#set until time "TO_DATE('13-May-2016 15:11:14','dd-mon-yyyy hh24:mi:ss')";
+#
+# Last updated: 16 May 2016 10:57:16
+#
+# Keywords: rman duplicate template
+#
+CONNECT TARGET SYS/<password>@trgt;
+CONNECT AUXILIARY SYS/<password>@dupdb;
+
+RUN {
+SET UNTIL SCN 99;
+ALLOCATE AUXILIARY CHANNEL aux1 DEVICE TYPE DISK;
+ALLOCATE AUXILIARY CHANNEL aux2 DEVICE TYPE DISK;
+ALLOCATE AUXILIARY CHANNEL aux3 DEVICE TYPE DISK;
+
+  DUPLICATE TARGET DATABASE TO dupdb
+  PFILE = /home/oracle/config/10.2.0/initAPP2.ora;
+
+release channel aux1;
+release channel aux2;
+release channel aux3;
+}
+
