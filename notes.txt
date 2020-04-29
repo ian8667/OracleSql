@@ -1,0 +1,508 @@
+3.2.6 Start the Physical Standby Database
+http://docs.oracle.com/cd/B28359_01/server.111/b28294/create_ps.htm#i63561
+
+Perform the following steps to start the physical standby database and Redo Apply.
+
+Verify the Physical Standby Database Is Performing Properly
+
+
+Applying Redo Data to Physical Standby Databases
+This section contains the following topics:
+
+Starting Redo Apply
+Stopping Redo Apply
+Monitoring Redo Apply on Physical Standby Databases
+
+http://docs.oracle.com/cd/B28359_01/server.111/b28294/log_apply.htm#i1020855
+
+##===========================================
+## New item
+##===========================================
+
+Keywords: data guard log shipping
+
+##===========================================
+## New item
+##===========================================
+
+DGMGRL> connect sys/*******
+Connected.
+
+DGMGRL> show configuration
+
+Configuration - veysi_config
+
+  Protection Mode: MaxPerformance
+  Databases:
+    istanbul- Primary database
+    Germany - Physical standby database
+
+Fast-Start Failover: DISABLED
+
+Configuration Status:
+SUCCESS
+
+
+Disable Transport LOG and Apply:
+
+
+DGMGRL> edit database istanbul set state='LOG-TRANSPORT-OFF';
+
+SUCCESS
+
+DGMGRL> edit database Germany set state='LOG-APPLY-OFF';
+SUCCESS
+
+Enable Transport LOG and Apply:
+
+
+DGMGRL> edit database istanbul set state='ONLINE';
+SUCCESS
+
+DGMGRL> edit database Germany set state='ONLINE';
+SUCCESS
+
+Hope,its helps..
+
+Source: https://www.linkedin.com/pulse/oracle-dataguard-disableenable-broker-veysi-gunay
+
+
+##===========================================
+## New item
+##===========================================
+
+To defer the log shipping, run the below command at the primary :
+
+SQL> alter system set log_archive_dest_state_2=defer sid='*';
+
+I am presuming that log_archive_dest_2 has been configured to ship the redo logs hence the log_archive_dest_state_2 has been deferred.
+If you are using a different log_archive_dest_n, then defer the corresponding dest_state_n
+
+
+##===========================================
+## New item
+##===========================================
+
+
+Creating a Physical Standby Database (Doc ID 1475344.1)
+
+This Document shows the various Possibilities to create a Physical Standby Database on Oracle Database 11.2.0.x.
+(and a refresh)
+
+##===========================================
+## New item
+##===========================================
+
+The size of redologs and the value for LOG_CHECKPOINT_INTERVAL play a very important role in the performance of the database.
+
+Please check below 2 documents
+
+note 472821.1
+Which Checkpoint Parameters To Set In Oracle10g
+
+note 147468.1
+Checkpoint Tuning and Troubleshooting Guide
+
+I normally try to size the redo logs so that a switch occurs 3-4 times per hour with the normal heavy load, and at most 10 times per hour at extreme peak load.I then set archive_lag_target to 900 to ensure a switch every 15 minutes during periods of low activity.
+Hope this helps
+
+##===========================================
+## New item
+##===========================================
+o ian.molloy 
+https://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmdupdb.htm#BRADV427
+
+Database Backup and Recovery Reference
+https://docs.oracle.com/cd/E11882_01/backup.112/e10643/rcmsynta020.htm#RCMRF126
+
+Database Backup and Recovery User's Guide
+24 Duplicating a Database
+https://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmdupdb.htm#BRADV010
+
+
+Today I was required to copy some data from our production Oracle server into
+test server. To do the schema and data transfer, I used Oracle SQL Developer.
+I am assuming that the connections to both production and test servers is
+already added in SQL Developer.
+http://sodeve.net/2015/04/how-to-copy-oracle-database-to-another-server/
+
+
+RMAN> run {
+set newname for datafile 1 to "/opt/oracle/oradata/neo/system01.dbf";
+set newname for datafile 2 to “/opt/oracle/oradata/neo/undotbs01.dbf”;
+set newname for datafile 3 to “/opt/oracle/oradata/neo/sysaux01.dbf”;
+set newname for datafile 4 to “/opt/oracle/oradata/neo/data01.dbf”;
+set newname for datafile 5 to “/opt/oracle/oradata/neo/index01.dbf”;
+set newname for datafile 6 to “/opt/oracle/oradata/neo/users01.dbf”;
+set newname for datafile 7 to “/opt/oracle/oradata/neo/streams.dbf”;
+set newname for datafile 8 to “/opt/oracle/oradata/neo/data01brig.dbf”;
+set newname for datafile 9 to “/opt/oracle/oradata/neo/index02.dbf”;
+restore database;
+switch datafile all;
+recover database until scn 336415067;
+}
+
+Duplicate database without connection to target database
+http://oracleinaction.com/duplicate-db-no-db-conn/
+In this post, I will demonstrate how to duplicate a database from its backups without any
+connection to the source database. This method can be used if source database is not
+available .
+********************************
+source database  orcl
+Duplicate database  orclt
+
+##===========================================
+## New item
+##===========================================
+
+NOTE: db_file_name_convert and log_file_name_convert parameters are required
+only if the source database directory structure and clone database directory
+structure differs.
+
+##===========================================
+## New item
+##===========================================
+ Figure 2a - Calculate total space for all datafiles within database.
+
+SQL> select DF.TOTAL/1048576 "DataFile Size Mb",
+            LOG.TOTAL/1048576 "Redo Log Size Mb",
+            CONTROL.TOTAL/1048576 "Control File Size Mb",
+            (DF.TOTAL + LOG.TOTAL + CONTROL.TOTAL)/1048576 "Total Size Mb" from dual,
+    (select sum(a.bytes) TOTAL from dba_data_files a
+     where tablespace_name in('SYSTEM','UNDOTBS1', 'SYSAUX', 'USERS')) DF,
+    (select sum(b.bytes) TOTAL from v$log b) LOG,
+    (select sum((cffsz+1)*cfbsz) TOTAL from x$kcccf c) CONTROL;
+
+##===========================================
+## New item
+##===========================================
+Example 13-3 Duplicating When Datafiles Use Inconsistent Paths
+
+CONNECT TARGET /;
+CONNECT CATALOG rman/cat@catdb;
+CONNECT AUXILIARY SYS/oracle@dupdb;
+
+# note that a RUN command is necessary because you can only execute SET NEWNAME
+# within a RUN command
+RUN
+{
+  # The DUPLICATE command uses an automatic sbt channel.
+  # Because the target datafiles are spread across multiple directories, 
+  # run SET NEWNAME rather than DB_FILE_NAME_CONVERT
+  SET NEWNAME FOR DATAFILE 1 TO '/oradata1/system01.dbf'; 
+  SET NEWNAME FOR DATAFILE 2 TO '/oradata2/undotbs01.dbf'; 
+  SET NEWNAME FOR DATAFILE 3 TO '/oradata3/cwmlite01.dbf'; 
+  SET NEWNAME FOR DATAFILE 4 TO '/oradata4/drsys01'; 
+  SET NEWNAME FOR DATAFILE 5 TO '/oradata5/example01.dbf'; 
+  SET NEWNAME FOR DATAFILE 6 TO '/oradata6/indx01.dbf';
+  # Do not set a newname for datafile 7, because it is in the tools tablespace,
+  # and you are excluding tools from the duplicate database.
+  SET NEWNAME FOR DATAFILE 8 TO '/oradata7/users01.dbf'; 
+  DUPLICATE TARGET DATABASE TO dupdb
+    SKIP TABLESPACE tools
+    LOGFILE
+      GROUP 1 ('/duplogs/redo01a.log', 
+               '/duplogs/redo01b.log') SIZE 200K REUSE, 
+      GROUP 2 ('/duplogs/redo02a.log', 
+               '/duplogs/redo02b.log') SIZE 200K REUSE;
+}
+
+Source: https://web.stanford.edu/dept/itss/docs/oracle/10gR2/backup.102/b14191/rcmdupdb006.htm
+
+##===========================================
+## New item
+##===========================================
+
+https://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmdupdb.htm#BRADV427
+
+Database Backup and Recovery Reference
+https://docs.oracle.com/cd/E11882_01/backup.112/e10643/rcmsynta020.htm#RCMRF126
+
+Database Backup and Recovery User's Guide
+24 Duplicating a Database
+https://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmdupdb.htm#BRADV010
+
+
+Today I was required to copy some data from our production Oracle server into
+test server. To do the schema and data transfer, I used Oracle SQL Developer.
+I am assuming that the connections to both production and test servers is
+already added in SQL Developer.
+http://sodeve.net/2015/04/how-to-copy-oracle-database-to-another-server/
+
+
+RMAN> run {
+set newname for datafile 1 to "/opt/oracle/oradata/neo/system01.dbf";
+set newname for datafile 2 to “/opt/oracle/oradata/neo/undotbs01.dbf”;
+set newname for datafile 3 to “/opt/oracle/oradata/neo/sysaux01.dbf”;
+set newname for datafile 4 to “/opt/oracle/oradata/neo/data01.dbf”;
+set newname for datafile 5 to “/opt/oracle/oradata/neo/index01.dbf”;
+set newname for datafile 6 to “/opt/oracle/oradata/neo/users01.dbf”;
+set newname for datafile 7 to “/opt/oracle/oradata/neo/streams.dbf”;
+set newname for datafile 8 to “/opt/oracle/oradata/neo/data01brig.dbf”;
+set newname for datafile 9 to “/opt/oracle/oradata/neo/index02.dbf”;
+restore database;
+switch datafile all;
+recover database until scn 336415067;
+}
+
+Duplicate database without connection to target database
+http://oracleinaction.com/duplicate-db-no-db-conn/
+In this post, I will demonstrate how to duplicate a database from its backups without any
+connection to the source database. This method can be used if source database is not
+available .
+********************************
+source database  orcl
+Duplicate database  orclt
+
+##===========================================
+## New item
+##===========================================
+
+NOTE: db_file_name_convert and log_file_name_convert parameters are required
+only if the source database directory structure and clone database directory
+structure differs.
+
+##===========================================
+## New item
+##===========================================
+ Figure 2a - Calculate total space for all datafiles within database.
+
+SQL> select DF.TOTAL/1048576 "DataFile Size Mb",
+            LOG.TOTAL/1048576 "Redo Log Size Mb",
+            CONTROL.TOTAL/1048576 "Control File Size Mb",
+            (DF.TOTAL + LOG.TOTAL + CONTROL.TOTAL)/1048576 "Total Size Mb" from dual,
+    (select sum(a.bytes) TOTAL from dba_data_files a
+     where tablespace_name in('SYSTEM','UNDOTBS1', 'SYSAUX', 'USERS')) DF,
+    (select sum(b.bytes) TOTAL from v$log b) LOG,
+    (select sum((cffsz+1)*cfbsz) TOTAL from x$kcccf c) CONTROL;
+
+##===========================================
+## New item
+##===========================================
+Example 13-3 Duplicating When Datafiles Use Inconsistent Paths
+
+CONNECT TARGET /;
+CONNECT CATALOG rman/cat@catdb;
+CONNECT AUXILIARY SYS/oracle@dupdb;
+
+# note that a RUN command is necessary because you can only execute SET NEWNAME
+# within a RUN command
+RUN
+{
+  # The DUPLICATE command uses an automatic sbt channel.
+  # Because the target datafiles are spread across multiple directories, 
+  # run SET NEWNAME rather than DB_FILE_NAME_CONVERT
+  SET NEWNAME FOR DATAFILE 1 TO '/oradata1/system01.dbf'; 
+  SET NEWNAME FOR DATAFILE 2 TO '/oradata2/undotbs01.dbf'; 
+  SET NEWNAME FOR DATAFILE 3 TO '/oradata3/cwmlite01.dbf'; 
+  SET NEWNAME FOR DATAFILE 4 TO '/oradata4/drsys01'; 
+  SET NEWNAME FOR DATAFILE 5 TO '/oradata5/example01.dbf'; 
+  SET NEWNAME FOR DATAFILE 6 TO '/oradata6/indx01.dbf';
+  # Do not set a newname for datafile 7, because it is in the tools tablespace,
+  # and you are excluding tools from the duplicate database.
+  SET NEWNAME FOR DATAFILE 8 TO '/oradata7/users01.dbf'; 
+  DUPLICATE TARGET DATABASE TO dupdb
+    SKIP TABLESPACE tools
+    LOGFILE
+      GROUP 1 ('/duplogs/redo01a.log', 
+               '/duplogs/redo01b.log') SIZE 200K REUSE, 
+      GROUP 2 ('/duplogs/redo02a.log', 
+               '/duplogs/redo02b.log') SIZE 200K REUSE;
+}
+
+Source: https://web.stanford.edu/dept/itss/docs/oracle/10gR2/backup.102/b14191/rcmdupdb006.htm
+
+##===========================================
+## New item
+##===========================================
+github
+https://github.com/
+ian8667
+https://github.com/ian8667/
+
+##===========================================
+## New item
+##===========================================
+Keywords: oracle rman restore recover database.
+
+
+RMAN> List backup;
+
+RMAN> run {
+2> allocate channel ch1 device type DISK;
+3> allocate channel ch2 device type DISK;
+4> restore database from TAG='DBDEV_002013869_12092012';
+5> }
+
+RMAN> exit
+
+SQL> recover database until cancel;
+SQL> recover database until cancel;
+ORA-00279: change 8871877088827 generated at 09/12/2012 16:36:02 needed for
+thread 1
+ORA-00289: suggestion :
+/u01/app/oracle/product/10.2.0/db_1/dbs/arch1_3023_768401970.dbf
+ORA-00280: change 8871877088827 for thread 1 is in sequence #3023
+Specify log: {<RET>=suggested | filename | AUTO | CANCEL}
+CANCEL
+Media recovery cancelled.
+SQL> alter database open resetlogs;
+
+##===========================================
+## New item
+##===========================================
+Source: http://dba.stackexchange.com/questions/39475/oracle-restore-how-to-restore-specific-bkp-file
+
+Restore the controlfile from autobackup:
+
+RMAN> restore controlfile from
+2> '/u01/app/oracle/fast_recovery_area/OCAEXAM/autobackup/2013_04_10/812350360_8pbk.bkp';
+
+RMAN> sql 'alter database mount';
+
+We're now ready to restore the database:
+
+RMAN> restore database from tag 'TAG20130410T050852';
+The final step is to open the database:
+
+RMAN> sql 'alter database open resetlogs';
+
+##===========================================
+## New item
+##===========================================
+Source: Getting Started with Recovery Manager (RMAN) (Doc ID 360416.1)
+
+It is recommended that more details are reviewed in the following documentation:
+
+o Oracle Database Backup and Recovery Reference
+o Oracle Database Backup and Recovery Quick Start Guide
+o Oracle Database Backup and Recovery Basics
+o Oracle Database Backup and Recovery Advanced User's Guide
+
+# -----
+
+Recovering the Whole Database :
+
+Use the RESTORE DATABASE and RECOVER DATABASE commands on the whole database. For example:
+
+RMAN> STARTUP FORCE MOUNT;
+      RESTORE DATABASE;
+      RECOVER DATABASE;
+      ALTER DATABASE OPEN;
+
+##===========================================
+## New item
+##===========================================
+
+Source: http://allappsdba.blogspot.co.uk/2012/04/restorerecovery-using-rman-with.html
+
+# Restore controlfile from Tag name.
+run{
+allocate channel ch1 type DISK;
+restore controlfile from tag 'TAG20090915T182528';
+release channel ch1;
+}
+
+
+# Mount the database.
+RMAN> alter database mount;
+
+# Run the below command to restore the database from tag
+run{
+allocate channel ch1 type DISK;
+allocate channel ch2 type DISK;
+allocate channel ch3 type DISK;
+allocate channel ch4 type DISK;
+RESTORE DATABASE from tag 'TAG20090915T182007';
+release channel ch1;
+release channel ch2;
+release channel ch3;
+release channel ch4;
+}
+
+SQL> Select distinct TO_CHAR(checkpoint_time,'DD-MON-YYYY HH24:MI:SS')
+from v$datafile;
+
+##===========================================
+## New item
+##===========================================
+
+Source: https://www.pythian.com/blog/oracle-rman-restore-to-the-same-machine-as-the-original-database/
+
+# Finding trace files
+SQL> alter database backup controlfile to trace;
+Database altered.
+
+SQL> select p.tracefile
+  2  from v$session s,
+  3       v$process p
+  4  where s.paddr = p.addr
+  5  and s.audsid = sys_context('USERENV', 'SESSIONID');
+
+TRACEFILE
+----------------------------------------------------------
+/u02/app/oracle/diag/rdbms/foo/foo/trace/foo_ora_19168.trc
+
+##===========================================
+## New item
+##===========================================
+Nomenclature
+
+With RMAN, Oracle introduced its own terms regarding the source database and the clone. It can be fairly confusing at first and I’ve found that most RMAN newbies are thrown by it, but we need to stick with what Oracle uses:
+
+o The source database is designated by RMAN to be the target database.
+o The new, cloned database is designated by RMAN to be the auxiliary database.
+
+##===========================================
+## New item
+##===========================================
+For my reference and notes (ie google blog)
+ 
+ 
+Documentation on utilities such as:
+ 
+Data Pump,
+SQL*Loader,
+External tables,
+ADRCI (ADR Command Interpreter)
+ 
+can be found in the "Data Warehousing and Business Intelligence", "Database Utilities" section of the Oracle online documentation.
+
+# -----
+
+Nomenclature
+ 
+With RMAN, Oracle introduced its own terms regarding the source database and the clone. It can be fairly confusing at first and I’ve found that most RMAN newbies are thrown by it, but we need to stick with what Oracle uses:
+ 
+o The source database is designated by RMAN to be the target database.
+o The new, cloned database is designated by RMAN to be the auxiliary database.
+
+# -----
+
+Tom Kyte introduces Oracle Multitenant in Oracle Database 12c followed by a demo showing: multitenant architecture, moving a pluggable database (PDB) from one multitenant container database (CDB) to another, cloning a PDB, and creating a new PDB. For more information:
+"Multitenant Architecture" in Oracle Database Concepts
+
+##===========================================
+## New item
+##===========================================
+
+To monitor RMAN job progress:
+
+Before starting the RMAN job, create a script file (called, for this example, longops) containing the following SQL statement:
+
+SELECT SID, SERIAL#, CONTEXT, SOFAR, TOTALWORK,
+       ROUND(SOFAR/TOTALWORK*100,2) as "%_COMPLETE"
+FROM   V$SESSION_LONGOPS
+WHERE  OPNAME LIKE 'RMAN%'
+AND    OPNAME NOT LIKE '%aggregate%'
+AND    TOTALWORK != 0
+AND    SOFAR <> TOTALWORK;
+
+Source: https://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmtunin.htm#BRADV89862
+
+
+Keywords: session longops rman
+
+##===========================================
+## New item
+##===========================================
