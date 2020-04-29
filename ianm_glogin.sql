@@ -13,7 +13,7 @@
 -- USAGE
 --   This script should be run upon logging in.
 --
--- Last updated: 24 August 2016 11:52:11
+-- Last updated: 01 September 2016 11:44:30
 --------------------------------------------------------
 --
 
@@ -25,7 +25,7 @@ alter session set NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS';
 
 SET AUTOCOMMIT OFF
 SET ECHO OFF
-SET EDITFILE C:\Temp\afiedt.buf
+SET EDITFILE /tmp/afiedt.buf
 SET ESCAPE ON
 SET EXITCOMMIT ON
 SET FEEDBACK ON
@@ -47,12 +47,13 @@ SET TRIMOUT ON
 SET TRIMSPOOL ON
 SET VERIFY ON
 BEGIN
+-- Populates column V$SESSION.CLIENT_INFO.
 DBMS_APPLICATION_INFO.SET_CLIENT_INFO(client_info => 'IANM');
 
-DBMS_APPLICATION_INFO.SET_MODULE ( 
-   module_name => 'IANM', 
-   action_name => 'SQL*PLUS'
-); 
+DBMS_APPLICATION_INFO.SET_MODULE (
+   module_name => 'IANM',     -- Populates column V$SESSION.MODULE.
+   action_name => 'SQL*PLUS'  -- Populates column V$SESSION.ACTION.
+);
 
 END;
 /
@@ -81,6 +82,22 @@ SELECT instance_name,
        status
 FROM   v$instance;
 
+
+-- Information from V$DATABASE.
+SET LINESIZE 121
+SELECT database_role,
+       dataguard_broker,
+       CASE cdb
+         WHEN 'YES' THEN 'Database is a CDB'
+         ELSE 'Database is NOT a CDB'
+       END              AS cdb_status,
+       platform_name,
+       flashback_on
+FROM   v$database;
+SET LINESIZE 80
+
 --------------------------------------------------------
 --  End of script
 --------------------------------------------------------
+
+
